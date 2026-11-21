@@ -1,0 +1,49 @@
+include("cl_ui.lua")
+include("cl_keybinds.lua")
+include("cl_round.lua")
+include("cl_admin.lua")
+include("cl_spectate.lua")
+include("cl_abilities.lua")
+include("cl_mapvote.lua")
+include("cl_admin_maps.lua")
+include("cl_menu.lua")
+include("cl_admin_players.lua")
+include("cl_aura.lua")
+include("cl_party.lua")
+include("cl_mutations.lua")
+include("cl_admin_mutations.lua")
+include("cl_chat.lua")
+include("cl_tags.lua")
+include("cl_admin_tags.lua")
+include("cl_partner.lua")
+include("cl_admin_partner.lua")
+include("cl_admin_speeds.lua")
+include("cl_admin_speednorm.lua")
+include("cl_poll.lua")
+include("cl_admin_poll.lua")
+include("cl_announce.lua")
+include("cl_admin_announce.lua")
+include("cl_scoreboard.lua")
+include("cl_nameplates.lua")
+include("cl_lms.lua")
+include("spawnmenu/creationmenu.lua")
+include("cl_admin_creation.lua")
+include("cl_roulette.lua")
+include("cl_admin_killers.lua")
+include("cl_admin_moderation.lua")
+include("cl_hitbox.lua")
+include("cl_afk.lua")
+include("cl_admin_afk.lua")
+include("cl_forcefield.lua")
+include("cl_cooldown.lua")
+
+-- hide health bar
+local hide = {
+    ["CHudHealth"] = true,
+}
+
+hook.Add("HUDShouldDraw", "HideHUDs", function(name)
+    if hide[name] then
+        return false
+    end
+end)

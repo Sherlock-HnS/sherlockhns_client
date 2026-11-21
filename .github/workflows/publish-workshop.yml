@@ -1,0 +1,89 @@
+name: Sherlock HnS Client Workshop
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths: ['addon/**', 'workshop-preview.png', '.github/workflows/publish-workshop.yml']
+  workflow_dispatch:
+    inputs:
+      create_new:
+        description: Criar o primeiro item do addon de cliente
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+concurrency:
+  group: workshop-client-${{ github.event_name == 'pull_request' && github.ref || 'release' }}
+  cancel-in-progress: false
+
+jobs:
+  workshop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Conferir arquivos do pacote
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f addon/lua/sherlockhns_client/cl_start.lua
+          test -f addon/materials/sherlockhns/logo.png
+          test -s workshop-preview.png
+          if find addon ! -type d ! -type f | grep .; then exit 1; fi
+          find addon -type f | while read -r path; do
+            case "$path" in
+              addon/addon.json|addon/materials/sherlockhns/*.png|addon/sound/sherlockhns/lms/*.mp3) ;;
+              addon/lua/sherlockhns_client/sh_lms_playlist.lua) ;;
+              addon/lua/sherlockhns_client/*)
+                case "${path#addon/lua/sherlockhns_client/}" in
+                  */sv_*|sv_*|*/init.lua|init.lua|*/shared.lua|shared.lua) exit 1 ;;
+                  cl_*.lua|views/cl_*.lua|spawnmenu/*.lua) ;;
+                  *) echo "Arquivo Lua inesperado: $path"; exit 1 ;;
+                esac ;;
+              *) echo "Arquivo inesperado: $path"; exit 1 ;;
+            esac
+          done
+      - name: Validar GMA sem enviar à Steam
+        uses: linventif/gmod-workshop-cicd@923dae0a327040b2f01cf6876cbecbbb97462bdf
+        with:
+          steam_user: ''
+          steam_pass: ''
+          content_path: addon
+          preview_file: workshop-preview.png
+          title: Sherlock HnS - Client
+          description: Interface, materiais e áudio para o servidor Sherlock HnS.
+          dry_run: 'true'
+      - name: Validar destino da publicação
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.WORKSHOP_ID != '')
+        env:
+          ITEM: ${{ vars.WORKSHOP_ID }}
+          CREATE: ${{ inputs.create_new }}
+        run: |
+          set -eu
+          if [ "$CREATE" = true ]; then
+            test -z "$ITEM" || { echo 'WORKSHOP_ID já configurado'; exit 1; }
+          else
+            [[ "$ITEM" =~ ^[1-9][0-9]*$ ]] || { echo 'Configure WORKSHOP_ID ou use create_new'; exit 1; }
+          fi
+      - name: Publicar addon de cliente
+        id: publish
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.WORKSHOP_ID != '')
+        uses: linventif/gmod-workshop-cicd@923dae0a327040b2f01cf6876cbecbbb97462bdf
+        with:
+          steam_user: ${{ secrets.STEAM_USER }}
+          steam_pass: ${{ secrets.STEAM_PASS }}
+          steam_shared_secret: ${{ secrets.STEAM_SHARED_SECRET }}
+          published_file_id: ${{ inputs.create_new && '0' || vars.WORKSHOP_ID }}
+          content_path: addon
+          preview_file: workshop-preview.png
+          title: Sherlock HnS - Client
+          description: Interface, materiais e áudio para o servidor Sherlock HnS.
+          visibility: '0'
+          change_note: Atualização do addon de cliente
+      - name: Registrar ID da Workshop
+        if: steps.publish.outcome == 'success'
+        env:
+          ITEM: ${{ steps.publish.outputs.published_file_id }}
+        run: echo "Workshop ID do cliente = $ITEM" >> "$GITHUB_STEP_SUMMARY"
