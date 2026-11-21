@@ -1,15 +1,8 @@
 name: Sherlock HnS Client Workshop
 on:
-  pull_request:
   push:
-    branches: [main]
-    paths: ['addon/**', 'workshop-preview.png', '.github/workflows/publish-workshop.yml']
-  workflow_dispatch:
-    inputs:
-      create_new:
-        description: Criar o primeiro item do addon de cliente
-        type: boolean
-        default: false
+    branches: [migration/first-workshop-publication]
+    paths: ['.github/workflows/publish-workshop.yml']
 
 permissions:
   contents: read
@@ -56,10 +49,9 @@ jobs:
           description: Interface, materiais e áudio para o servidor Sherlock HnS.
           dry_run: 'true'
       - name: Validar destino da publicação
-        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.WORKSHOP_ID != '')
         env:
           ITEM: ${{ vars.WORKSHOP_ID }}
-          CREATE: ${{ inputs.create_new }}
+          CREATE: 'true'
         run: |
           set -eu
           if [ "$CREATE" = true ]; then
@@ -67,15 +59,23 @@ jobs:
           else
             [[ "$ITEM" =~ ^[1-9][0-9]*$ ]] || { echo 'Configure WORKSHOP_ID ou use create_new'; exit 1; }
           fi
+      - name: Conferir acesso da conta Steam
+        env:
+          USER_SET: ${{ secrets.STEAM_USER != '' }}
+          PASS_SET: ${{ secrets.STEAM_PASS != '' }}
+          GUARD_SET: ${{ secrets.STEAM_SHARED_SECRET != '' }}
+        run: |
+          for key in USER_SET PASS_SET GUARD_SET; do
+            if [[ "${!key}" != true ]]; then echo "::error::Credencial indisponível ($key)"; exit 1; fi
+          done
       - name: Publicar addon de cliente
         id: publish
-        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.WORKSHOP_ID != '')
         uses: linventif/gmod-workshop-cicd@923dae0a327040b2f01cf6876cbecbbb97462bdf
         with:
           steam_user: ${{ secrets.STEAM_USER }}
           steam_pass: ${{ secrets.STEAM_PASS }}
           steam_shared_secret: ${{ secrets.STEAM_SHARED_SECRET }}
-          published_file_id: ${{ inputs.create_new && '0' || vars.WORKSHOP_ID }}
+          published_file_id: '0'
           content_path: addon
           preview_file: workshop-preview.png
           title: Sherlock HnS - Client
