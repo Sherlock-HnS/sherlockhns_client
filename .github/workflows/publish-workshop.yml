@@ -1,29 +1,47 @@
 name: Sherlock HnS Client Workshop
+
 on:
   pull_request:
+    branches: [main]
+    paths:
+      - 'addon/**'
+      - 'workshop-preview.png'
+      - '.github/workflows/publish-workshop.yml'
   push:
     branches: [main]
-    paths: ['addon/**', 'workshop-preview.png', '.github/workflows/publish-workshop.yml']
+    paths:
+      - 'addon/**'
+      - 'workshop-preview.png'
+      - '.github/workflows/publish-workshop.yml'
   workflow_dispatch:
     inputs:
       create_new:
-        description: Criar o primeiro item do addon de cliente
+        description: Criar o primeiro item do addon de cliente (somente se ainda não existir)
         type: boolean
         default: false
+      workshop_id:
+        description: ID de um item existente/draft para publicar ou atualizar
+        type: string
+        default: ''
 
 permissions:
   contents: read
+
+# A fila é compartilhada entre execuções deste repositório; não coordena os outros repositórios.
 concurrency:
   group: workshop-client-${{ github.event_name == 'pull_request' && github.ref || 'release' }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   workshop:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
       - name: Conferir arquivos do pacote
         shell: bash
         run: |
@@ -45,6 +63,7 @@ jobs:
               *) echo "Arquivo inesperado: $path"; exit 1 ;;
             esac
           done
+
       - name: Validar GMA sem enviar à Steam
         uses: linventif/gmod-workshop-cicd@923dae0a327040b2f01cf6876cbecbbb97462bdf
         with:
@@ -55,35 +74,79 @@ jobs:
           title: Sherlock HnS - Client
           description: Interface, materiais e áudio para o servidor Sherlock HnS.
           dry_run: 'true'
+
       - name: Validar destino da publicação
         if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.WORKSHOP_ID != '')
         env:
-          ITEM: ${{ vars.WORKSHOP_ID }}
+          ITEM: ${{ inputs.workshop_id || vars.WORKSHOP_ID }}
           CREATE: ${{ inputs.create_new }}
+        shell: bash
         run: |
-          set -eu
-          if [ "$CREATE" = true ]; then
-            test -z "$ITEM" || { echo 'WORKSHOP_ID já configurado'; exit 1; }
-          else
-            [[ "$ITEM" =~ ^[1-9][0-9]*$ ]] || { echo 'Configure WORKSHOP_ID ou use create_new'; exit 1; }
+          set -euo pipefail
+
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo 'A publicação só pode ser executada a partir da branch main.'
+            exit 1
           fi
+
+          if [[ "$CREATE" == "true" ]]; then
+            [[ -z "$ITEM" ]] || {
+              echo 'WORKSHOP_ID já está configurado; desmarque create_new.'
+              exit 1
+            }
+          else
+            [[ "$ITEM" =~ ^[1-9][0-9]*$ ]] || {
+              echo 'Configure a variável WORKSHOP_ID ou informe workshop_id, ou marque create_new para a primeira publicação.'
+              exit 1
+            }
+          fi
+
+      - name: Conferir acesso da conta Steam
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.WORKSHOP_ID != ''))
+        env:
+          USER_SET: ${{ secrets.STEAM_USER != '' }}
+          PASS_SET: ${{ secrets.STEAM_PASS != '' }}
+          GUARD_SET: ${{ secrets.STEAM_SHARED_SECRET != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in USER_SET PASS_SET GUARD_SET; do
+            if [[ "${!key}" != true ]]; then
+              echo "::error::Credencial indisponível ($key)"
+              exit 1
+            fi
+          done
+
       - name: Publicar addon de cliente
         id: publish
-        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.WORKSHOP_ID != '')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.WORKSHOP_ID != ''))
         uses: linventif/gmod-workshop-cicd@923dae0a327040b2f01cf6876cbecbbb97462bdf
         with:
           steam_user: ${{ secrets.STEAM_USER }}
           steam_pass: ${{ secrets.STEAM_PASS }}
           steam_shared_secret: ${{ secrets.STEAM_SHARED_SECRET }}
-          published_file_id: ${{ inputs.create_new && '0' || vars.WORKSHOP_ID }}
+          published_file_id: ${{ inputs.create_new && '0' || inputs.workshop_id || vars.WORKSHOP_ID }}
           content_path: addon
           preview_file: workshop-preview.png
           title: Sherlock HnS - Client
           description: Interface, materiais e áudio para o servidor Sherlock HnS.
           visibility: '0'
-          change_note: Atualização do addon de cliente
-      - name: Registrar ID da Workshop
+          change_note: Atualização do addon de cliente (${{ github.sha }})
+
+      - name: Registrar resultado da publicação
         if: steps.publish.outcome == 'success'
         env:
           ITEM: ${{ steps.publish.outputs.published_file_id }}
-        run: echo "Workshop ID do cliente = $ITEM" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          {
+            echo "## Sherlock HnS Client publicado"
+            echo
+            echo "Workshop ID: [$ITEM](https://steamcommunity.com/sharedfiles/filedetails/?id=$ITEM)"
+            echo
+            echo 'Para as próximas atualizações automáticas, configure a variável de repositório `WORKSHOP_ID` com esse ID, ou informe-o em `workshop_id` ao executar manualmente.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Informar publicação automática desativada
+        if: github.event_name == 'push' && vars.WORKSHOP_ID == ''
+        run: |
+          echo 'Validação concluída. A publicação automática está desativada até configurar a variável WORKSHOP_ID.' >> "$GITHUB_STEP_SUMMARY"
