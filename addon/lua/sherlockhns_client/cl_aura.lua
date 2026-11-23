@@ -121,11 +121,8 @@ hook.Add("PostDrawTranslucentRenderables", "SherlockHNS_AuraEntity", function(de
             local base = owner:Team() == TEAM_KILLERS and COL_KILLER or COL_RUNNER
             local pos, mins, maxs = e:GetPos(), e:GetBMins(), e:GetBMaxs()
 
-            -- preenchimento leve (as duas faces, para ver por dentro também)
-            local fill = Color(base.r, base.g, base.b, 28)
-            render.DrawBox(pos, angle_zero, mins, maxs, fill)
-            render.DrawBox(pos, angle_zero, maxs, mins, fill)
-
+            -- Desenha apenas o contorno: preencher o AABB transforma a aura
+            -- em um bloco sólido, especialmente evidente nos killers em vermelho.
             -- arestas
             local wmin, wmax = pos + mins, pos + maxs
             local c = Color(base.r, base.g, base.b, 255)
