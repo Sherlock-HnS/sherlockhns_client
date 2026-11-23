@@ -534,6 +534,40 @@ local function OpenMenu()
             it.fn()
         end
     end
+    -- Atalho para a comunidade no Discord.
+    local discordSize = U(56)
+    local discord = SherlockHNS.UI.Create("DButton", panel)
+    discord:SetSize(discordSize, discordSize)
+    discord:SetPos(math.max(U(20), ScrW() - discordSize - U(36)), U(36))
+    discord:SetText("")
+    discord:SetTooltip("Entrar no Discord do Sherlock HnS")
+    discord.hover = 0
+
+    local logoScale = discordSize / 32
+    function discord:Paint(w, h)
+        self.hover = Lerp(FrameTime() * 12, self.hover, self:IsHovered() and 1 or 0)
+        local blurple = Color(88, 101, 242)
+
+        draw.RoundedBox(h / 2, 0, 0, w, h, blurple)
+        if self.hover > 0 then
+            draw.RoundedBox(h / 2, 0, 0, w, h, Color(255, 255, 255, 28 * self.hover))
+        end
+
+        -- Silhueta simplificada do símbolo do Discord, sem dependência de fontes externas.
+        local cx, cy, s = w / 2, h / 2, logoScale
+        draw.RoundedBox(7 * s, cx - 10 * s, cy - 7 * s, 20 * s, 15 * s, color_white)
+        draw.RoundedBox(4 * s, cx - 14 * s, cy - 2 * s, 7 * s, 9 * s, color_white)
+        draw.RoundedBox(4 * s, cx + 7 * s, cy - 2 * s, 7 * s, 9 * s, color_white)
+        draw.RoundedBox(3 * s, cx - 8 * s, cy - 10 * s, 5 * s, 6 * s, color_white)
+        draw.RoundedBox(3 * s, cx + 3 * s, cy - 10 * s, 5 * s, 6 * s, color_white)
+        draw.RoundedBox(2 * s, cx - 5 * s, cy - 2 * s, 3 * s, 4 * s, blurple)
+        draw.RoundedBox(2 * s, cx + 2 * s, cy - 2 * s, 3 * s, 4 * s, blurple)
+    end
+
+    function discord:DoClick()
+        surface.PlaySound("ui/buttonclickrelease.wav")
+        gui.OpenURL("https://discord.gg/EHXbAmpbse")
+    end
 end
 
 hook.Add("OnScreenSizeChanged", "HNS_MenuViewport", function()
