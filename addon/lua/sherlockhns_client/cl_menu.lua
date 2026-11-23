@@ -61,9 +61,8 @@ local function CloseAfterAction()
 end
 
 -- Integração opcional com o addon Sherlock Outfitter.
--- A janela é aberta por cima do menu atual para que o jogador
--- retorne ao mesmo menu ao sair da seleção de outfits.
-local function OpenOutfitter()
+-- O painel principal é criado dentro do container de conteúdo do menu.
+local function OpenOutfitter(parent)
     local addon = rawget(_G, "outfitter")
     if not istable(addon) or not isfunction(addon.GUIOpen) then
         notification.AddLegacy("Outfitter não está carregado.", NOTIFY_ERROR, 5)
@@ -71,7 +70,13 @@ local function OpenOutfitter()
         return
     end
 
-    addon.GUIOpen()
+    local gui = addon.GUIOpen(parent)
+    if not IsValid(gui) then return end
+
+    gui.hns_onclose = function()
+        activeTab = nil
+        if IsValid(content) then content:SetVisible(false) end
+    end
 end
 
 -- ===== Ranking =====
@@ -345,6 +350,7 @@ local TABS = {
             SherlockHNS.Party.BuildTab(p, { U = U, F = F, accent = COL_ACCENT, dim = COL_DIM })
         end
     },
+    outfits  = { title = "Outfits", build = OpenOutfitter },
     benefits = {
         title = "Benefícios",
         build = function(p)
@@ -496,7 +502,7 @@ local function OpenMenu()
     end
     Add("rank", "Rank", function() ShowTab("rank") end)
     Add("party", "Party", function() ShowTab("party") end)
-    Add("outfits", "Outfits", OpenOutfitter)
+    Add("outfits", "Outfits", function() ShowTab("outfits") end)
     Add("benefits", "Benefícios", function() ShowTab("benefits") end)
     Add("rules", "Regras", function() ShowTab("rules") end)
     Add("settings", "Configurações", function() ShowTab("settings") end)
