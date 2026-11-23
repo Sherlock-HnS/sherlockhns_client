@@ -218,6 +218,7 @@ local function BuildGeneral(scroll)
     end
 
     Check("Mostrar a HUD do Sherlock HnS", "hns_hud")
+    Check("Mostrar a quantidade de jogadores vivos", "hns_alive_counter")
     Slider("Escala da HUD", "hns_hud_scale", 0.5, 2, 2)
     Check("Mostrar as barreiras anti-loop", "hns_barrier_visible")
     Slider("Distância de exibição das barreiras (0 = sempre)", "hns_barrier_distance", 0, 5000, 0)

@@ -7,6 +7,7 @@ local AB, HUD       = SherlockHNS.Ability, SherlockHNS.HUD
 
 local cvEnable      = CreateClientConVar("hns_hud", "1", true, false, "Mostra a HUD do Sherlock HnS", 0, 1)
 local cvScale       = CreateClientConVar("hns_hud_scale", "1", true, false, "Escala da HUD do Sherlock HnS", 0.5, 2)
+local cvAliveCount  = CreateClientConVar("hns_alive_counter", "1", true, false, "Mostra a quantidade de jogadores vivos", 0, 1)
 
 -- Esconde a HUD nativa das pills (pk_pill_cl_hidehud) para não clipar com a nossa
 HUD.HidePillHUD     = true
@@ -85,6 +86,35 @@ local function GetSorted()
     end
     return sorted
 end
+
+-- ===== Elemento: contador de jogadores vivos =====
+HUD.AddElement("alive_count", 5, function()
+    if not cvAliveCount:GetBool() or not SH.GetParticipants then return end
+
+    local alive = 0
+    for _, ply in ipairs(SH.GetParticipants()) do
+        if IsValid(ply) and not ply:IsBot() and ply:Alive() then
+            alive = alive + 1
+        end
+    end
+
+    local U = HUD.U
+    local w, h = U(128), U(48)
+    local x = ScrW() - U(24) - w
+    local y = SherlockHNS.UI.HUDY("status")
+    local accent = SherlockHNS.UI.Colors.accent
+
+    draw.RoundedBox(U(8), x, y, w, h, HUD.Theme.bg)
+    surface.SetDrawColor(accent.r, accent.g, accent.b, 230)
+    surface.DrawRect(x, y, U(3), h)
+    surface.SetDrawColor(255, 255, 255, 45)
+    surface.DrawOutlinedRect(x, y, w, h, 1)
+
+    draw.SimpleText("VIVOS", HUD.Font(U(12), 800), x + U(12), y + h / 2,
+        HUD.Theme.textDim, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+    draw.SimpleText(tostring(alive), HUD.Font(U(24), 900), x + w - U(12), y + h / 2,
+        HUD.Theme.text, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+end)
 
 -- ===== Estado das habilidades (espelho do servidor) =====
 local slots, byId = {}, {}
