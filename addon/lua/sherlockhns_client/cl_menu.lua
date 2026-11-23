@@ -60,6 +60,20 @@ local function CloseAfterAction()
     CloseMenu()
 end
 
+-- Integração opcional com o addon Sherlock Outfitter.
+-- A janela é aberta por cima do menu atual para que o jogador
+-- retorne ao mesmo menu ao sair da seleção de outfits.
+local function OpenOutfitter()
+    local addon = rawget(_G, "outfitter")
+    if not istable(addon) or not isfunction(addon.GUIOpen) then
+        notification.AddLegacy("Outfitter não está carregado.", NOTIFY_ERROR, 5)
+        surface.PlaySound("common/warning.wav")
+        return
+    end
+
+    addon.GUIOpen()
+end
+
 -- ===== Ranking =====
 net.Receive("sherlockhns_rank_sync", function()
     local data = { rows = {} }
@@ -482,6 +496,7 @@ local function OpenMenu()
     end
     Add("rank", "Rank", function() ShowTab("rank") end)
     Add("party", "Party", function() ShowTab("party") end)
+    Add("outfits", "Outfits", OpenOutfitter)
     Add("benefits", "Benefícios", function() ShowTab("benefits") end)
     Add("rules", "Regras", function() ShowTab("rules") end)
     Add("settings", "Configurações", function() ShowTab("settings") end)
