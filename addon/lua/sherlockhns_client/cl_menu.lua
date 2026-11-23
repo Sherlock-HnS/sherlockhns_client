@@ -368,6 +368,15 @@ local function ShowTab(id)
     rankBody = nil
     content:Clear()
 
+    -- Outfitter tem seu próprio título e frame. Remove o espaço reservado
+    -- ao cabeçalho do menu para que o DFrame encaixe no container inteiro.
+    -- Ao sair da aba, restaura o padding usado pelas demais telas.
+    if id == "outfits" then
+        content:DockPadding(0, 0, 0, 0)
+    else
+        content:DockPadding(U(40), U(112), U(40), U(36))
+    end
+
     if same then
         content:SetVisible(false)
         return
