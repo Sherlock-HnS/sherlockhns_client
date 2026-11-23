@@ -120,6 +120,6 @@ net.Receive("sherlockhns_sitechat", function()
     CustomChat.allowExternalEmbeds = previousExternalEmbeds
 
     if not ok then
-        ErrorNoHalt("[SherlockHNS Chat] " .. tostring(err) .. "\\n")
+        ErrorNoHalt("[SherlockHNS Chat] " .. tostring(err) .. "\n")
     end
 end)
