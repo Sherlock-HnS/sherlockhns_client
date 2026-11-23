@@ -4,7 +4,7 @@ Este addon fornece a interface, o spawnmenu administrativo, as visualizações d
 
 ## Instalação
 
-Monte o item da Workshop na coleção do servidor ou instale o conteúdo de `addon/` em `garrysmod/addons/sherlockhns_client/`. Use o gamemode `sherlockhns_gamemode`, o Sherlock Custom Chat com o marcador de integração v1 e a base Sherlock Parakeets. O gamemode carrega o cliente depois dos plugins. Instalar o addon em Sandbox não registra hooks, armas, painéis ou comandos.
+Monte o item da Workshop na coleção do servidor ou instale o conteúdo de `addon/` em `garrysmod/addons/sherlockhns_client/`. Use o gamemode `sherlockhns_gamemode`, o Sherlock Custom Chat com o marcador de integração v1, a base Sherlock Parakeets e o addon `sherlock-outfitter`. O botão **Outfits** no menu do cliente abre a interface de seleção de outfits do Outfitter. O gamemode carrega o cliente depois dos plugins. Instalar o addon em Sandbox não registra hooks, armas, painéis ou comandos.
 
 Em `server.cfg`, defina `sherlockhns_client_workshop_id "ID_DO_ITEM"`. Ao entrar, os jogadores recebem os assets pela Workshop e o Lua pelo canal nativo do GMod.
 
