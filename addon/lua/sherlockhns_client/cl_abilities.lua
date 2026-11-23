@@ -92,7 +92,7 @@ HUD.AddElement("alive_count", 5, function()
     if not cvAliveCount:GetBool() or not SherlockHNS.GetParticipants then return end
 
     local alive = 0
-    for _, ply in ipairs(SH.GetParticipants()) do
+    for _, ply in ipairs(SherlockHNS.GetParticipants()) do
         if IsValid(ply) and not ply:IsBot() and ply:Alive() then
             alive = alive + 1
         end
