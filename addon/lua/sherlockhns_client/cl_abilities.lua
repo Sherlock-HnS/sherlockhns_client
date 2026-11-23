@@ -89,7 +89,7 @@ end
 
 -- ===== Elemento: contador de jogadores vivos =====
 HUD.AddElement("alive_count", 5, function()
-    if not cvAliveCount:GetBool() or not SH.GetParticipants then return end
+    if not cvAliveCount:GetBool() or not SherlockHNS.GetParticipants then return end
 
     local alive = 0
     for _, ply in ipairs(SH.GetParticipants()) do
