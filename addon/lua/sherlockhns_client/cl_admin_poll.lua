@@ -90,16 +90,34 @@ function SherlockHNS.BuildPollTab(sheet)
     function status:Think()
         local c = P.GetCurrent()
         if not c then
-            self:SetText("Nenhuma enquete ativa.")
+            self:SetText("Nenhuma enquete ativa ou resultado recente.")
             return
         end
 
         local lines, total = {}, 0
         for i, o in ipairs(c.options) do
-            lines[#lines + 1] = ("%s: %d"):format(o, c.counts[i] or 0)
-            total = total + (c.counts[i] or 0)
+            local votes = c.counts[i] or 0
+            lines[#lines + 1] = ("%s: %d"):format(o, votes)
+            total = total + votes
         end
-        self:SetText("Ativa: " .. c.question .. "  (" .. total .. " votos)\n" .. table.concat(lines, "\n"))
+
+        if c.active == false then
+            local winners = {}
+            for _, index in ipairs(c.winners or {}) do
+                if c.options[index] then winners[#winners + 1] = c.options[index] end
+            end
+
+            if total == 0 then
+                lines[#lines + 1] = "Nenhum voto registrado."
+            elseif #winners > 1 then
+                lines[#lines + 1] = "Empate: " .. table.concat(winners, ", ")
+            elseif #winners == 1 then
+                lines[#lines + 1] = "Vencedor: " .. winners[1]
+            end
+        end
+
+        local status = c.active == false and "Encerrada" or "Ativa"
+        self:SetText(status .. ": " .. c.question .. "  (" .. total .. " votos)\n" .. table.concat(lines, "\n"))
     end
 
     return pnl
