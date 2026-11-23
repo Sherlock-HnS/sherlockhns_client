@@ -101,5 +101,25 @@ net.Receive("sherlockhns_sitechat", function()
     contents[#contents + 1] = color_white
     contents[#contents + 1] = ": " .. text
 
-    CustomChat:AddMessage(contents, channel)
+    -- O chat do site usa um canal próprio, então o Custom Chat não tem o speaker
+    -- de customchat.say. Injeta o contexto apenas durante a renderização para manter
+    -- os hooks de permissão e permitir embeds da whitelist também para usuários offline.
+    local previousLastReceivedMessage = CustomChat.lastReceivedMessage
+    local previousExternalEmbeds = CustomChat.allowExternalEmbeds
+
+    CustomChat.lastReceivedMessage = IsValid(ply) and {
+        speaker = ply,
+        text = text,
+        channel = channel,
+    } or nil
+    CustomChat.allowExternalEmbeds = true
+
+    local ok, err = pcall(CustomChat.AddMessage, CustomChat, contents, channel)
+
+    CustomChat.lastReceivedMessage = previousLastReceivedMessage
+    CustomChat.allowExternalEmbeds = previousExternalEmbeds
+
+    if not ok then
+        ErrorNoHalt("[SherlockHNS Chat] " .. tostring(err) .. "\\n")
+    end
 end)
