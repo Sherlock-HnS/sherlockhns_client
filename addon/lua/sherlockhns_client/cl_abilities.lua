@@ -7,7 +7,8 @@ local AB, HUD       = SherlockHNS.Ability, SherlockHNS.HUD
 
 local cvEnable      = CreateClientConVar("hns_hud", "1", true, false, "Mostra a HUD do Sherlock HnS", 0, 1)
 local cvScale       = CreateClientConVar("hns_hud_scale", "1", true, false, "Escala da HUD do Sherlock HnS", 0.5, 2)
-local cvAliveCount  = CreateClientConVar("hns_alive_counter", "1", true, false, "Mostra a quantidade de jogadores vivos", 0, 1)
+local cvAliveCount  = CreateClientConVar("hns_alive_counter", "1", true, false, "Mostra a quantidade de jogadores vivos",
+    0, 1)
 
 -- Esconde a HUD nativa das pills (pk_pill_cl_hidehud) para não clipar com a nossa
 HUD.HidePillHUD     = true
@@ -89,11 +90,11 @@ end
 
 -- ===== Elemento: contador de jogadores vivos =====
 HUD.AddElement("alive_count", 5, function()
-    if not cvAliveCount:GetBool() or not SherlockHNS.GetParticipants then return end
+    if not cvAliveCount:GetBool() then return end
 
     local alive = 0
-    for _, ply in ipairs(SherlockHNS.GetParticipants()) do
-        if IsValid(ply) and not ply:IsBot() and ply:Alive() then
+    for _, ply in ipairs(team.GetPlayers(TEAM_HIDERS)) do
+        if IsValid(ply) and ply:Alive() and ply:GetObserverMode() == OBS_MODE_NONE then
             alive = alive + 1
         end
     end
