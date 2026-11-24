@@ -19,41 +19,45 @@ function SherlockHNS.BuildSpeedNormTab(parent)
     pnl.Paint = nil
     pnl:DockPadding(10, 10, 10, 10)
 
-    local hint = SherlockHNS.UI.Create("DLabel", pnl)
-    hint:Dock(TOP)
-    hint:DockMargin(0, 0, 0, 8)
-    hint:SetWrap(true)
-    hint:SetAutoStretchVertical(true)
-    hint:SetDark(true)
-    hint:SetText("Aproxima a velocidade de todas as pills da velocidade base dos players (pills costume pela " ..
-        "velocidade máxima, mantendo a proporção walk/run/crouch; pills físicas pela mediana do mesmo tipo de drive). " ..
-        "O equilíbrio dá vantagem de velocidade aos runners (0) ou aos killers (100). " ..
-        "Overrides do painel de pills continuam valendo por campo quando permitidos.")
+    local SECTIONS = {
+        { "1. Velocidade base do player (runners sem pill)",  nil,                       { "SnBaseWalk", "SnBaseRun", "SnBaseCrouch", "SnBaseJump" } },
+        { "2. Pills",                                         { "SnOn", "SnOverrides" }, { "SnRef", "SnCrouchPct", "SnBhopPhys" } },
+        { "3. Equilíbrio runners x killers (só afeta pills)", nil,                       { "SnBias", "SnSwing" } },
+    }
 
-    for _, t in ipairs(SN.Toggles) do
-        local c = SherlockHNS.UI.Create("DCheckBoxLabel", pnl)
-        c:Dock(TOP)
-        c:DockMargin(0, 0, 0, 6)
-        c:SetText(t.label)
-        c:SetDark(true)
-        c:SetValue(SN.Toggle(t.key))
-        -- definido depois do SetValue para não enviar na abertura
-        function c:OnChange(val) SendConfig(t.key, val and 1 or 0) end
+    for _, sec in ipairs(SECTIONS) do
+        local head = SherlockHNS.UI.Create("DLabel", pnl)
+        head:Dock(TOP); head:DockMargin(0, 14, 0, 4); head:SetTall(20)
+        head:SetFont("DermaDefaultBold"); head:SetDark(true); head:SetText(sec[1])
+
+        for _, key in ipairs(sec[2] or {}) do
+            local t = SN.ToggleByKey[key]
+            local c = SherlockHNS.UI.Create("DCheckBoxLabel", pnl)
+            c:Dock(TOP); c:DockMargin(0, 0, 0, 6)
+            c:SetText(t.label); c:SetDark(true); c:SetValue(SN.Toggle(key))
+            function c:OnChange(val) SendConfig(key, val and 1 or 0) end
+        end
+
+        for _, key in ipairs(sec[3]) do
+            local s = SN.SettingByKey[key]
+            local sl = SherlockHNS.UI.Create("DNumSlider", pnl)
+            sl:Dock(TOP); sl:DockMargin(0, 0, 16, 4)
+            sl:SetText(s.label); sl:SetDark(true)
+            sl:SetMin(s.min); sl:SetMax(s.max); sl:SetDecimals(0); sl:SetValue(SN.Num(key))
+            sl.OnValueChanged = function(_, v)
+                timer.Create("sherlockhns_slider_" .. key, 0.4, 1, function() SendConfig(key, v) end)
+            end
+        end
     end
 
-    for _, s in ipairs(SN.Settings) do
-        local sl = SherlockHNS.UI.Create("DNumSlider", pnl)
-        sl:Dock(TOP)
-        sl:DockMargin(0, 0, 16, 4)
-        sl:SetText(s.label)
-        sl:SetDark(true)
-        sl:SetMin(s.min)
-        sl:SetMax(s.max)
-        sl:SetDecimals(0)
-        sl:SetValue(SN.Num(s.key))
-        sl.OnValueChanged = function(_, v)
-            timer.Create("sherlockhns_slider_" .. s.key, 0.4, 1, function() SendConfig(s.key, v) end)
-        end
+    -- resumo: o que cada lado vai ter de teto
+    local sum = SherlockHNS.UI.Create("DLabel", pnl)
+    sum:Dock(TOP); sum:DockMargin(0, 10, 0, 0); sum:SetTall(20); sum:SetDark(true)
+    function sum:Think()
+        local ref = SN.Reference("ply")
+        self:SetText(("Teto de pill normalizada: runner %d | killer %d   (runner sem pill: %d / %d)")
+            :format(ref * SN.TeamFactor(TEAM_HIDERS), ref * SN.TeamFactor(TEAM_KILLERS),
+                SN.Num("SnBaseWalk"), SN.Num("SnBaseRun")))
     end
 
     -- ===== Prévia =====
@@ -91,7 +95,8 @@ function SherlockHNS.BuildSpeedNormTab(parent)
     local function Fill()
         if not IsValid(list) then return end
 
-        head:SetText("Prévia da compatibilização" .. (SN.Toggle("SnOn") and "" or "  (opção desligada: valores abaixo são só simulação)"))
+        head:SetText("Prévia da compatibilização" ..
+        (SN.Toggle("SnOn") and "" or "  (opção desligada: valores abaixo são só simulação)"))
 
         local filter, rows = string.lower(search:GetValue() or ""), {}
         for name, t in pairs((pk_pills and pk_pills.Forms) or {}) do
