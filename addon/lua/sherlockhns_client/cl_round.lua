@@ -116,27 +116,16 @@ hook.Add("HUDPaint", "SherlockHnS_RoundHUD", function()
 
     -- Killers' health is visible to runners as a shared status bar.
     if (state == ROUND_ACTIVE or state == ROUND_LMS) and LocalPlayer():Team() == TEAM_HIDERS then
-        local killers = team.GetPlayers(TEAM_KILLERS)
-        local shown, totalHealth, totalMax = 0, 0, 0
-        for _, killer in ipairs(killers) do
-            if IsValid(killer) and killer:Alive() then
-                shown = shown + 1
-                totalHealth = totalHealth + math.max(0, killer:Health())
-                totalMax = totalMax + math.max(1, killer:GetMaxHealth())
-            end
-        end
-        if shown > 0 then
+        local jugger = GetGlobalEntity("sherlockhns_juggernaut")
+        if IsValid(jugger) and jugger:Team() == TEAM_KILLERS and jugger:Alive() then
             local bw, bh = math.min(U(280), ScrW() - 32), U(26)
             local bx, by = cx - bw / 2, y + h + U(extra and 44 or 6)
-            local col = GetGlobalEntity("sherlockhns_juggernaut")
-            local isJugger = IsValid(col) and col:Team() == TEAM_KILLERS and col:Alive()
-            local accentCol = isJugger and COL_WARN or Color(210, 65, 65)
-            Pill(bx, by, bw, bh, accentCol)
-            local frac = math.Clamp(totalHealth / totalMax, 0, 1)
-            surface.SetDrawColor(accentCol.r, accentCol.g, accentCol.b, 230)
+            Pill(bx, by, bw, bh, COL_WARN)
+
+            local frac = math.Clamp(jugger:Health() / math.max(1, jugger:GetMaxHealth()), 0, 1)
+            surface.SetDrawColor(COL_WARN.r, COL_WARN.g, COL_WARN.b, 230)
             surface.DrawRect(bx + U(4), by + U(4), (bw - U(8)) * frac, bh - U(8))
-            local label = isJugger and "JUGGERNAUT" or (shown == 1 and "VIDA DO KILLER" or "VIDA DOS KILLERS")
-            draw.SimpleText(label .. "  " .. math.floor(frac * 100) .. "%", UI.Font(13, 800), cx, by + bh / 2,
+            draw.SimpleText("JUGGERNAUT  " .. math.floor(frac * 100) .. "%", UI.Font(13, 800), cx, by + bh / 2,
                 color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
         end
     end
