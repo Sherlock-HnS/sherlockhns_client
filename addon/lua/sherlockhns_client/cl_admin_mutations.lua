@@ -60,9 +60,13 @@ function SherlockHNS.BuildMutationsTab(sheet)
     status:SetFont("DermaDefaultBold")
     status:SetDark(true)
     function status:Think()
-        local names = {}
+        local names, queued = {}, {}
         for _, id in ipairs(M.GetActive()) do names[#names + 1] = M.ById[id].name end
-        self:SetText("Mutações ativas: " .. (#names > 0 and table.concat(names, ", ") or "nenhuma"))
+        for _, def in ipairs(M.List) do
+            if M.IsScheduled(def.id) then queued[#queued + 1] = def.name end
+        end
+        self:SetText("Ativas: " .. (#names > 0 and table.concat(names, ", ") or "nenhuma")
+            .. "   |   Próxima rodada: " .. (#queued > 0 and table.concat(queued, ", ") or "sorteio normal"))
     end
 
     local stop = SherlockHNS.UI.Create("DButton", pnl)
@@ -142,6 +146,39 @@ function SherlockHNS.BuildMutationsTab(sheet)
             end
             self:SetEnabled(enabled)
         end
+
+        local sched = SherlockHNS.UI.Create("DButton", scroll)
+        sched:Dock(TOP)
+        sched:DockMargin(0, 2, 16, 0)
+        sched:SetTall(26)
+        sched.DoClick = function() SendAction("mutsched_" .. def.id) end
+
+        local lastSchedTxt
+        function sched:Think()
+            local txt, enabled
+
+            if M.IsScheduled(def.id) then
+                txt, enabled = "Agendada para a próxima rodada (clique para cancelar)", true
+            else
+                local list = {}
+                for _, d in ipairs(M.List) do
+                    if M.IsScheduled(d.id) then list[#list + 1] = d.id end
+                end
+
+                local clash = M.FirstConflict(def.id, list)
+                if clash then
+                    txt, enabled = "Incompatível com a agendada: " .. M.ById[clash].name, false
+                else
+                    txt, enabled = "Agendar para a próxima rodada", true
+                end
+            end
+
+            if txt ~= lastSchedTxt then
+                lastSchedTxt = txt
+                self:SetText(txt)
+            end
+            self:SetEnabled(enabled)
+        end
     end
 
     tabs:AddSheet("Mutações", pnl, "icon16/lightning.png")
@@ -154,7 +191,8 @@ function SherlockHNS.BuildMutationsTab(sheet)
     hint:SetTall(36)
     hint:SetWrap(true)
     hint:SetDark(true)
-    hint:SetText("Armas entregues aos jogadores vivos enquanto Juggernaut estiver ativo. Selecione as disponíveis e adicione ao loadout.")
+    hint:SetText(
+        "Armas entregues aos jogadores vivos enquanto Juggernaut estiver ativo. Selecione as disponíveis e adicione ao loadout.")
 
     local search = SherlockHNS.UI.Create("DTextEntry", weaponsPanel)
     search:Dock(TOP)
@@ -198,7 +236,11 @@ function SherlockHNS.BuildMutationsTab(sheet)
     for _, swep in ipairs(weapons.GetList() or {}) do
         local class = swep.ClassName or swep.Class
         if isstring(class) and class ~= "" then
-            catalog[class] = { class = class, name = (swep.PrintName and swep.PrintName ~= "" and swep.PrintName) or class }
+            catalog[class] = {
+                class = class,
+                name = (swep.PrintName and swep.PrintName ~= "" and swep.PrintName) or
+                    class
+            }
         end
     end
     for _, class in ipairs(SherlockHNS.AdminJuggerWeapons or {}) do
@@ -206,7 +248,8 @@ function SherlockHNS.BuildMutationsTab(sheet)
     end
     local ordered = {}
     for _, item in pairs(catalog) do ordered[#ordered + 1] = item end
-    table.sort(ordered, function(a, b) return a.name:lower() == b.name:lower() and a.class < b.class or a.name:lower() < b.name:lower() end)
+    table.sort(ordered,
+        function(a, b) return a.name:lower() == b.name:lower() and a.class < b.class or a.name:lower() < b.name:lower() end)
 
     local current = {}
     for _, class in ipairs(SherlockHNS.AdminJuggerWeapons or {}) do current[class] = true end
@@ -216,7 +259,8 @@ function SherlockHNS.BuildMutationsTab(sheet)
         available:Clear()
         selected:Clear()
         for _, item in ipairs(ordered) do
-            local matches = filter == "" or item.name:lower():find(filter, 1, true) or item.class:lower():find(filter, 1, true)
+            local matches = filter == "" or item.name:lower():find(filter, 1, true) or
+                item.class:lower():find(filter, 1, true)
             if current[item.class] then
                 local line = selected:AddLine(item.name, item.class)
                 line.weaponClass = item.class
@@ -245,8 +289,12 @@ function SherlockHNS.BuildMutationsTab(sheet)
         for _, item in ipairs(ordered) do if current[item.class] then out[#out + 1] = item.class end end
         SendJuggerWeaponSet(out)
     end)
-    available.DoDoubleClick = function(_, _, line) current[line.weaponClass] = true; RefreshLists() end
-    selected.DoDoubleClick = function(_, _, line) current[line.weaponClass] = nil; RefreshLists() end
+    available.DoDoubleClick = function(_, _, line)
+        current[line.weaponClass] = true; RefreshLists()
+    end
+    selected.DoDoubleClick = function(_, _, line)
+        current[line.weaponClass] = nil; RefreshLists()
+    end
     search.OnChange = RefreshLists
     RefreshLists()
     local refreshJuggerWeaponLists = function()
