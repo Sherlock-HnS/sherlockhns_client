@@ -239,6 +239,14 @@ local function BuildMatchTab(sheet)
         SendConfig("DynamicKillers", val and 1 or 0)
     end
 
+    local bonus = SherlockHNS.UI.Create("DCheckBoxLabel", pnl)
+    bonus:Dock(TOP)
+    bonus:DockMargin(0, 0, 0, 8)
+    bonus:SetText("Adicionar tempo ao matar um runner")
+    bonus:SetDark(true)
+    bonus:SetValue(GetGlobalBool("sherlockhns_kill_time_bonus_on", false))
+    local bonusSlider
+
     for _, s in ipairs(SherlockHNS.TimeSettings) do
         local sl = SherlockHNS.UI.Create("DNumSlider", pnl)
         sl:Dock(TOP)
@@ -256,6 +264,15 @@ local function BuildMatchTab(sheet)
                 SendConfig(s.key, v)
             end)
         end
+        if s.key == "KillTimeBonusTime" then
+            bonusSlider = sl
+            sl:SetEnabled(bonus:GetChecked())
+        end
+    end
+
+    function bonus:OnChange(val)
+        if IsValid(bonusSlider) then bonusSlider:SetEnabled(val) end
+        SendConfig("KillTimeBonusOn", val and 1 or 0)
     end
 
     for _, s in ipairs(SherlockHNS.VoiceSettings) do
