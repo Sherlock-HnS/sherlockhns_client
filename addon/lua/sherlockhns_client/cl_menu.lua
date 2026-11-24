@@ -372,7 +372,7 @@ local function ShowTab(id)
     -- ao cabeçalho do menu para que o DFrame encaixe no container inteiro.
     -- Ao sair da aba, restaura o padding usado pelas demais telas.
     if id == "outfits" then
-        content:DockPadding(0, 0, 0, 0)
+        content:DockPadding(U(6), U(6), U(6), U(6))
     else
         content:DockPadding(U(40), U(112), U(40), U(36))
     end
@@ -665,4 +665,16 @@ end)
 
 hook.Add("SherlockHNS_ShouldDrawHUD", "SherlockHNS_MenuHideAbilityHUD", function()
     if IsValid(panel) then return false end
+end)
+
+hook.Add("OnTextEntryGetFocus", "HNS_MenuKeyFocusOn", function(pnl)
+    if IsValid(panel) and IsValid(pnl) and pnl:HasParent(panel) then
+        panel:SetKeyboardInputEnabled(true)
+    end
+end)
+
+hook.Add("OnTextEntryLoseFocus", "HNS_MenuKeyFocusOff", function(pnl)
+    if IsValid(panel) and IsValid(pnl) and pnl:HasParent(panel) then
+        panel:SetKeyboardInputEnabled(false)
+    end
 end)
