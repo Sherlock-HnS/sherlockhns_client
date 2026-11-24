@@ -13,6 +13,7 @@ K.List = {
     { id = "afk_no",        label = "Votação de killer AFK: não quero",      default = KEY_F7 },
     { id = "afk_self",      label = "Ficar AFK (ir para o menu)",            default = 0 },  -- sem tecla por padrão
     { id = "poll",          label = "Enquete: segurar para liberar o mouse", default = KEY_G, hold = true },
+    { id = "modfile",       label = "Admin: abrir ficha do jogador (mira / espectando)", default = KEY_R },
 }
 
 K.ById, K.cv, K.Binders = {}, {}, setmetatable({}, { __mode = "k" })

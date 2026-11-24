@@ -88,6 +88,13 @@ end
 -- ===== Desenho =====
 local alpha, last = 0, nil
 
+-- Jogador sob a mira agora (usado pelo atalho de ficha dos admins; ver cl_admin_moderation.lua)
+function NP.GetAimed()
+    local lp = LocalPlayer()
+    if not IsValid(lp) or not lp:Alive() or alpha <= 1 then return nil end
+    return IsValid(NP.Current) and NP.Current or nil
+end
+
 hook.Add("HUDPaint", "SherlockHNS_Nameplate", function()
     local lp = LocalPlayer()
     if not IsValid(lp) then return end
@@ -98,6 +105,7 @@ hook.Add("HUDPaint", "SherlockHNS_Nameplate", function()
     if show and SH.HUD and SH.HUD.Hidden then show = false end
 
     local target = show and FindTarget(lp) or nil
+    NP.Current = target
     if target then last = target end
 
     local dt = FrameTime()
@@ -147,5 +155,11 @@ hook.Add("HUDPaint", "SherlockHNS_Nameplate", function()
     if tagLabel then
         draw.SimpleText(tagLabel, F(14), centerX, y + padY + nameH + U(2),
             ColorAlpha(accent, 255 * a), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+    end
+
+    -- dica só para administradores
+    if lp:IsAdmin() and SH.Keys and SH.Keys.Get("modfile") > 0 and IsValid(NP.Current) then
+        draw.SimpleText("[" .. SH.Keys.Name("modfile") .. "] Ficha", F(13), centerX, y + boxH + U(2),
+            ColorAlpha(Color(255, 214, 102), 230 * a), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
     end
 end)
