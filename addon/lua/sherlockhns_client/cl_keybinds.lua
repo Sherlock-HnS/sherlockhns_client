@@ -6,14 +6,15 @@ SherlockHNS.Keys = SherlockHNS.Keys or {}
 local K = SherlockHNS.Keys
 
 K.List = {
-    { id = "menu",          label = "Abrir / fechar o menu",                 default = KEY_F2 },
-    { id = "party_accept",  label = "Aceitar convite de party",              default = KEY_F3 },
-    { id = "party_decline", label = "Recusar convite de party",              default = KEY_F4 },
-    { id = "afk_yes",       label = "Votação de killer AFK: eu quero",       default = KEY_F6 },
-    { id = "afk_no",        label = "Votação de killer AFK: não quero",      default = KEY_F7 },
-    { id = "afk_self",      label = "Ficar AFK (ir para o menu)",            default = 0 },  -- sem tecla por padrão
-    { id = "poll",          label = "Enquete: segurar para liberar o mouse", default = KEY_G, hold = true },
+    { id = "menu",          label = "Abrir / fechar o menu",                             default = KEY_F2 },
+    { id = "party_accept",  label = "Aceitar convite de party",                          default = KEY_F3 },
+    { id = "party_decline", label = "Recusar convite de party",                          default = KEY_F4 },
+    { id = "afk_yes",       label = "Votação de killer AFK: eu quero",                   default = KEY_F6 },
+    { id = "afk_no",        label = "Votação de killer AFK: não quero",                  default = KEY_F7 },
+    { id = "afk_self",      label = "Ficar AFK (ir para o menu)",                        default = 0 }, -- sem tecla por padrão
+    { id = "poll",          label = "Enquete: segurar para liberar o mouse",             default = KEY_G, hold = true },
     { id = "modfile",       label = "Admin: abrir ficha do jogador (mira / espectando)", default = KEY_R },
+    { id = "outfits",       label = "Abrir Outfits",                                     default = KEY_C },
 }
 
 K.ById, K.cv, K.Binders = {}, {}, setmetatable({}, { __mode = "k" })
@@ -101,6 +102,8 @@ end)
 local nativeBinds = { gm_showteam = true, gm_showspare1 = true, gm_showspare2 = true }
 hook.Add("PlayerBindPress", "SherlockHNS_KeysNative", function(_, bind, pressed)
     if nativeBinds[bind] then return true end
+    -- o C padrão do GMod abre o context menu; bloqueia enquanto a tecla de Outfits for C
+    if bind == "+menu_context" and K.Get("outfits") == KEY_C then return true end
 end)
 
 -- ===== UI (subaba "Teclas" das Configurações) =====

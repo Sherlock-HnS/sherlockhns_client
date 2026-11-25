@@ -605,6 +605,33 @@ end
 
 SherlockHNS.Keys.On("menu", ToggleMenu)
 
+-- Atalho de Outfits (padrão: C): abre o menu direto na aba Outfits.
+-- Com a aba já aberta, a mesma tecla fecha o overlay (quem está no menu inicial não consegue fechar).
+SherlockHNS.Keys.On("outfits", function()
+    local lp = LocalPlayer()
+    if not IsValid(lp) then return end
+
+    if IsValid(panel) then
+        if activeTab ~= "outfits" then
+            ShowTab("outfits")
+        elseif not SH.IsInMenu(lp) then
+            CloseMenu()
+        end
+        return
+    end
+
+    -- evita abrir o menu à toa quando o servidor bloqueia troca de outfit
+    local addon = rawget(_G, "outfitter")
+    if addon and isfunction(addon.IsOutfitChangeBlocked) and addon.IsOutfitChangeBlocked(lp) then
+        notification.AddLegacy("Você não pode trocar de outfit durante a partida.", NOTIFY_ERROR, 4)
+        surface.PlaySound("common/warning.wav")
+        return
+    end
+
+    OpenMenu()
+    ShowTab("outfits")
+end)
+
 net.Receive("sherlockhns_menu_open", ToggleMenu)
 
 -- Para quem quiser outra tecla: bind <tecla> hns_menu
