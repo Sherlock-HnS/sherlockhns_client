@@ -7,7 +7,7 @@
 
 local SH = SherlockHNS
 
-local cvEntity = CreateClientConVar("hns_aura_entity", "0", true, false,
+local cvEntity = CreateClientConVar("hns_aura_mode_entity", "0", true, false,
     "Aura por entidade (1, mais leve) ou halo (0, padrão).", 0, 1)
 
 local COL_KILLER = Color(255, 60, 60)

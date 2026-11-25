@@ -2,16 +2,19 @@
 -- e a aba "Party" do menu (usada por cl_menu.lua).
 -- Servidor: gamemode/sv_party.lua | Shared: gamemode/sh_party.lua
 
-local SH         = SherlockHNS
-local P          = SH.Party
-local ACT        = P.ACT
+local SH          = SherlockHNS
+local P           = SH.Party
+local ACT         = P.ACT
 
-local COL_ACCENT = Color(180, 136, 0)
-local COL_DIM    = Color(190, 190, 190)
-local COL_PANEL  = Color(15, 15, 20, 235)
-local COL_ALIVE  = Color(90, 220, 120)
-local COL_DEAD   = Color(230, 80, 80)
-local COL_AURA   = Color(90, 255, 140)
+local COL_ACCENT  = Color(180, 136, 0)
+local COL_DIM     = Color(190, 190, 190)
+local COL_PANEL   = Color(15, 15, 20, 235)
+local COL_ALIVE   = Color(90, 220, 120)
+local COL_DEAD    = Color(230, 80, 80)
+local COL_AURA    = Color(90, 255, 140)
+
+local cvPartyAura = CreateClientConVar("hns_party_aura", "1", true, false,
+    "Mostra a aura dos amigos da party (0/1).", 0, 1)
 
 local function U(v) return SherlockHNS.UI.Unit(v) end
 
@@ -212,6 +215,7 @@ end)
 -- Se a aura geral estiver ligada, ela já mostra todo mundo.
 -- ============================================================
 hook.Add("PreDrawHalos", "SherlockHNS_PartyAura", function()
+    if not cvPartyAura:GetBool() then return end
     local lp = LocalPlayer()
     if not IsValid(lp) or lp:Team() ~= TEAM_HIDERS then return end
     if P.GetId(lp) == 0 then return end
