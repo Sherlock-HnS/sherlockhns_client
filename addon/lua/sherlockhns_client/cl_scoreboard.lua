@@ -40,9 +40,25 @@ local function VKey(ply)
     return "hns_voice_" .. (ply:IsBot() and ply:Nick() or (ply:SteamID64() or "0"))
 end
 
-function SB.GetVolume(ply) return math.Clamp(cookie.GetNumber(VKey(ply) .. "_vol", 1), 0, 1) end
+local voiceCache = {}
 
-function SB.IsMuted(ply) return cookie.GetNumber(VKey(ply) .. "_mute", 0) == 1 end
+local function VState(ply)
+    local key = VKey(ply)
+    local s = voiceCache[key]
+    if not s then
+        s = {
+            key  = key,
+            vol  = math.Clamp(cookie.GetNumber(key .. "_vol", 1), 0, 1),
+            mute = cookie.GetNumber(key .. "_mute", 0) == 1,
+        }
+        voiceCache[key] = s
+    end
+    return s
+end
+
+function SB.GetVolume(ply) return VState(ply).vol end
+
+function SB.IsMuted(ply) return VState(ply).mute end
 
 local function ApplyVoice(ply)
     if not IsValid(ply) or ply == LocalPlayer() or ply:IsBot() then return end
@@ -51,12 +67,18 @@ local function ApplyVoice(ply)
 end
 
 function SB.SetVolume(ply, v)
-    cookie.Set(VKey(ply) .. "_vol", tostring(math.Clamp(v, 0, 1)))
+    local s = VState(ply)
+    s.vol = math.Clamp(v, 0, 1)
+    timer.Create("hns_vsave_vol_" .. s.key, 0.5, 1, function()
+        cookie.Set(s.key .. "_vol", tostring(s.vol))
+    end)
     ApplyVoice(ply)
 end
 
 function SB.SetMuted(ply, state)
-    cookie.Set(VKey(ply) .. "_mute", state and "1" or "0")
+    local s = VState(ply)
+    s.mute = state and true or false
+    cookie.Set(s.key .. "_mute", s.mute and "1" or "0") -- raro, pode gravar direto
     ApplyVoice(ply)
 end
 
@@ -129,12 +151,14 @@ local function MakeRow(parent, ply)
     row:Dock(TOP)
     row:SetTall(U(42))
     row:DockMargin(0, 0, U(8), U(4))
-    row.ply     = ply
+    row.ply            = ply
+    row.tags           = {}
+    row.tagsNextUpdate = 0
 
-    local isMe  = ply == LocalPlayer()
-    local voice = not isMe and not ply:IsBot()
+    local isMe         = ply == LocalPlayer()
+    local voice        = not isMe and not ply:IsBot()
 
-    local av    = SherlockHNS.UI.Create("AvatarImage", row)
+    local av           = SherlockHNS.UI.Create("AvatarImage", row)
     av:SetPlayer(ply, 64)
 
     local mute, slider
@@ -181,7 +205,7 @@ local function MakeRow(parent, ply)
             surface.SetFont(F(15))
             x = x + surface.GetTextSize(txt) + U(8)
 
-            for i, tag in ipairs(T.GetDisplayTags(ply)) do
+            for i, tag in ipairs(row.tags) do
                 local label = SherlockHNS.UI.Fit("[" .. tag.text .. "]", F(16), math.max(0, w - U(310) - x))
                 draw.SimpleText(label, F(16), x, cy, Color(tag.color.r, tag.color.g, tag.color.b),
                     TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
@@ -208,6 +232,16 @@ local function MakeRow(parent, ply)
             local p = ply:Ping()
             draw.SimpleText(p .. " ms", F(16), w - U(16), cy, PingColor(p), TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
         end
+    end
+
+    function row:Think()
+        if not IsValid(ply) then return end
+
+        local now = CurTime()
+        if now < self.tagsNextUpdate then return end
+
+        self.tagsNextUpdate = now + 0.5
+        self.tags = T.GetDisplayTags(ply) or {}
     end
 
     return row
@@ -280,8 +314,10 @@ local function Open()
     local scroll = SherlockHNS.UI.Create("DScrollPanel", board)
     scroll:Dock(FILL)
 
-    local lastSig
+    local nextSig = 0
     function scroll:Think()
+        if CurTime() < nextSig then return end
+        nextSig = CurTime() + 0.25
         local sig = Signature()
         if sig ~= lastSig then
             lastSig = sig
