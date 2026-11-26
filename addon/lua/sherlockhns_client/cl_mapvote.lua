@@ -15,26 +15,38 @@ local BORDER       = 4 -- moldura colorida em volta da imagem
 local vote, choice
 local images       = {} -- [mapa] = URL da capa (enviada pelo servidor)
 
--- Capa remota via DHTML (mesmo método do cl_lms.lua; funciona com HTTPS em qualquer branch)
+-- Capa remota via URLImage; evita criar um Chromium por card.
+local function DrawURLImage(image, x, y, w, h)
+    if not image then return false end
+    local imageW, imageH = image()
+    if not imageW or not imageH then return false end
+
+    local sourceAspect, targetAspect = imageW / imageH, w / h
+    local u0, v0, u1, v1 = 0, 0, 1, 1
+    if sourceAspect > targetAspect then
+        local crop = targetAspect / sourceAspect
+        u0, u1 = (1 - crop) / 2, (1 + crop) / 2
+    elseif sourceAspect < targetAspect then
+        local crop = sourceAspect / targetAspect
+        v0, v1 = (1 - crop) / 2, (1 + crop) / 2
+    end
+
+    surface.SetDrawColor(255, 255, 255, 255)
+    surface.DrawTexturedRectUV(x, y, w, h, u0, v0, u1, v1)
+    return true
+end
+
 local function SetCardImage(card, url)
     if not isstring(url) or url == "" or card.imageUrl == url then return end
     card.imageUrl = url
 
     if IsValid(card.html) then card.html:Remove() end
+    card.html = nil
 
-    local html = SherlockHNS.UI.Create("DHTML", card)
-    html:Dock(FILL)
-    html:DockMargin(BORDER, BORDER, BORDER, BORDER)
-    html:SetMouseInputEnabled(false) -- o clique continua indo para o card
-    html:SetHTML(([[
-        <html><body style="margin:0;background:#282834;overflow:hidden;">
-            <img src="%s" style="width:100%%;height:100%%;object-fit:cover;" />
-        </body></html>
-    ]]):format((url:gsub('"', "&quot;"))))
-
-    card.html = html
+    -- A thunk is retained per card; only the thunk is polled from Paint.
+    card.imageThunk = isfunction(surface.URLImage) and surface.URLImage(url, "smooth") or nil
+    card.imageReady = false
 end
-
 local function OpenVote(opts)
     if IsValid(vote) then vote:Remove() end
     choice = nil
@@ -118,7 +130,8 @@ local function OpenVote(opts)
             end
             draw.RoundedBox(8, 0, 0, pw, ph, bg)
 
-            if self.thumb and not IsValid(self.html) then
+            self.imageReady = DrawURLImage(self.imageThunk, BORDER, BORDER, pw - BORDER * 2, ph - BORDER * 2)
+            if not self.imageReady and self.thumb then
                 surface.SetDrawColor(255, 255, 255, 255)
                 surface.SetMaterial(self.thumb)
                 surface.DrawTexturedRect(BORDER, BORDER, pw - BORDER * 2, ph - BORDER * 2)
@@ -127,7 +140,7 @@ local function OpenVote(opts)
 
         -- texto por cima da imagem
         function card:PaintOver(pw, ph)
-            local hasImage = IsValid(self.html) or self.thumb
+            local hasImage = self.imageReady or self.thumb
             local votes = self.count .. (self.count == 1 and " voto" or " votos")
 
             surface.SetFont("SherlockHNS_MapName")
