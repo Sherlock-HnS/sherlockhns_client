@@ -45,21 +45,8 @@ function HUD.U(v)
     return math.Round(v * cvScale:GetFloat() * SherlockHNS.UI.Scale())
 end
 
-local fonts = {}
 function HUD.Font(size, weight)
-    size, weight = math.max(8, size), weight or 700
-    local name = "SherlockHNS_HUD_" .. size .. "_" .. weight
-    if not fonts[name] then
-        surface.CreateFont(name, {
-            font = HUD.Theme.font,
-            size = size,
-            weight = weight,
-            antialias = true,
-            extended = true,
-        })
-        fonts[name] = true
-    end
-    return name
+    return SherlockHNS.UI.FontPixels(size, weight or 700, HUD.Theme.font)
 end
 
 -- ===== Elementos da HUD =====

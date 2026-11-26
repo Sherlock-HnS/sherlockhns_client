@@ -22,15 +22,8 @@ local MAT_MUTE   = Material("icon16/sound_mute.png")
 
 local function U(v) return SherlockHNS.UI.Unit(v) end
 
-local fonts = {}
 local function F(size, weight)
-    size, weight = math.max(8, U(size)), weight or 700
-    local name = "SherlockHNS_SB_" .. size .. "_" .. weight
-    if not fonts[name] then
-        surface.CreateFont(name, { font = "Tahoma", size = size, weight = weight, antialias = true, extended = true })
-        fonts[name] = true
-    end
-    return name
+    return SherlockHNS.UI.Font(size, weight or 700)
 end
 
 -- ============================================================

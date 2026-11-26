@@ -12,15 +12,8 @@ local COL_NO    = Color(230, 80, 80)
 
 local function U(v) return SH.UI.Unit(v) end
 
-local fonts = {}
 local function F(size, weight)
-    size, weight = math.max(8, U(size)), weight or 700
-    local name = "SherlockHNS_Afk_" .. size .. "_" .. weight
-    if not fonts[name] then
-        surface.CreateFont(name, { font = "Tahoma", size = size, weight = weight, antialias = true, extended = true })
-        fonts[name] = true
-    end
-    return name
+    return SH.UI.Font(size, weight or 700)
 end
 
 -- ============================================================

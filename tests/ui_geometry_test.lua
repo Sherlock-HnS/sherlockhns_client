@@ -8,9 +8,17 @@ function Color(r,g,b,a) return {r=r,g=g,b=b,a=a or 255} end
 color_white = Color(255,255,255)
 math.Round = function(n) return math.floor(n+0.5) end
 table.Copy = function(t) local out={} for k,v in pairs(t) do out[k]=type(v)=='table' and table.Copy(v) or v end return out end
-surface = {CreateFont=function() end, SetFont=function() end, GetTextSize=function(t) return #t*8,16 end}
-local callbacks={}
-hook={Add=function(event,name,fn) callbacks[event]=fn end}
+local createdFonts = {}
+surface = {
+ CreateFont=function(name, data) createdFonts[name]=data end,
+ SetFont=function() end,
+ GetTextSize=function(t) return #t*8,16 end
+}
+local callbacks,callbackCounts={},{}
+hook={Add=function(event,name,fn)
+ callbacks[event]=fn
+ callbackCounts[event]=(callbackCounts[event] or 0)+1
+end}
 derma={GetSkinTable=function() return {Default={Colours={Label={},Button={},Tab={Active={},Inactive={}}}}} end,DefineSkin=function() end}
 vgui={Create=function() error('Unexpected panel construction in geometry test') end}
 NODOCK,LEFT,TOP=0,2,1
@@ -34,10 +42,29 @@ local function panel(w,h)
 end
 -- PRODUCTION_SOURCE
 local UI=SherlockHNS.UI
+assert(callbackCounts.OnScreenSizeChanged == 1, 'UI viewport must use exactly one resize hook')
+
+local defaultFont = UI.Font(24,700)
+assert(defaultFont == UI.Font(24,700), 'same font request must reuse its cached name')
+assert(createdFonts[defaultFont] and createdFonts[defaultFont].font == 'Tahoma')
+local alternateFont = UI.Font(24,700,'Trebuchet MS')
+assert(alternateFont ~= defaultFont, 'different font families must not collide')
+assert(createdFonts[alternateFont] and createdFonts[alternateFont].font == 'Trebuchet MS')
+local pixelFont = UI.FontPixels(17,800)
+assert(createdFonts[pixelFont] and createdFonts[pixelFont].size == 17,
+ 'pixel-based font helper must not apply viewport scaling')
+
 local cases={{640,480},{800,600},{1024,768},{1280,720},{1920,1080},{2560,1080},{3440,1440},{3840,2160},{1080,1920}}
 local checks=0
 for _,viewport in ipairs(cases) do
  screenW,screenH=viewport[1],viewport[2]
+ callbacks.OnScreenSizeChanged()
+ local expectedScale=math.min(screenW/1920,screenH/1080)
+ assert(math.abs(UI.Scale()-expectedScale)<0.000001, 'cached scale must match the latest viewport')
+ assert(UI.Unit(100)==math.max(1,math.Round(100*expectedScale)))
+ local fontName=UI.Font(24,700)
+ assert(fontName==UI.Font(24,700), 'font cache must reuse weight/size entries')
+ assert(createdFonts[fontName].size==math.max(12,math.Round(24*expectedScale)))
  local w,h=UI.Bounds(1500,900)
  assert(w>0 and h>0 and w<screenW and h<screenH)
  local window=panel(1,1)
@@ -45,6 +72,10 @@ for _,viewport in ipairs(cases) do
  assert(window.x>=0 and window.y>=0 and window.x+w<=screenW and window.y+h<=screenH)
  screenW,screenH=math.floor(screenW*0.8),math.floor(screenH*0.8)
  callbacks.OnScreenSizeChanged()
+ local resizedScale=math.min(screenW/1920,screenH/1080)
+ assert(math.abs(UI.Scale()-resizedScale)<0.000001)
+ local resizedFont=UI.Font(24,700)
+ assert(createdFonts[resizedFont].size==math.max(12,math.Round(24*resizedScale)))
  assert(window.x>=0 and window.y>=0 and window.x+window.w<=screenW and window.y+window.h<=screenH)
  local row=panel(screenW-64,1)
  for i=1,9 do row.children[i]=panel(i%2==0 and 170 or 110,28) end

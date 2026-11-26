@@ -11,18 +11,65 @@ UI.Colors = {
     muted = Color(165, 165, 175)
 }
 local C = UI.Colors
-function UI.Scale() return math.min(ScrW() / 1920, ScrH() / 1080) end
 
-function UI.Unit(value) return math.max(1, math.Round(value * UI.Scale())) end
+-- Viewport metrics are stable between resize events; HUD code can call Scale()
+-- and Unit() repeatedly without querying the screen dimensions every frame.
+local scale = math.min(ScrW() / 1920, ScrH() / 1080)
 
-function UI.Font(size, weight)
-    local pixels = math.max(12, UI.Unit(size))
-    local name = 'HNS_UI_' .. pixels .. '_' .. (weight or 500)
+-- Font cache is split by weight and pixel size. Alternate families get an
+-- independent two-level cache so they cannot collide with the default Tahoma.
+local fontCache = {}
+local alternateFontCaches = {}
+local fontPrefixes = {
+    Tahoma = 'HNS_UI_',
+    ['Trebuchet MS'] = 'HNS_UI_Trebuchet_MS_',
+}
+
+function UI.Scale() return scale end
+
+function UI.Unit(value) return math.max(1, math.Round(value * scale)) end
+
+local function GetFontCache(font)
+    if font == 'Tahoma' then return fontCache end
+
+    local byFamily = alternateFontCaches[font]
+    if not byFamily then
+        byFamily = {}
+        alternateFontCaches[font] = byFamily
+    end
+    return byFamily
+end
+
+-- Accepts logical UI units and applies the shared viewport scale once.
+function UI.Font(size, weight, font)
+    return UI.FontPixels(UI.Unit(size), weight, font)
+end
+
+-- For callers that already calculated their final pixel size (HUD.U, for example).
+function UI.FontPixels(size, weight, font)
+    weight = weight or 500
+    font = font or 'Tahoma'
+
+    local pixels = math.max(12, math.Round(size))
+    local cache = GetFontCache(font)
+    local byW = cache[weight]
+    if not byW then
+        byW = {}
+        cache[weight] = byW
+    end
+
+    local name = byW[pixels]
+    if name then return name end
+
+    local prefix = fontPrefixes[font] or ('HNS_UI_' .. font:gsub('[^%w]', '_') .. '_')
+    name = prefix .. pixels .. '_' .. weight
     UI.Fonts = UI.Fonts or {}
     if not UI.Fonts[name] then
-        surface.CreateFont(name, { font = 'Tahoma', size = pixels, weight = weight or 500, extended = true })
+        surface.CreateFont(name, { font = font, size = pixels, weight = weight, extended = true })
         UI.Fonts[name] = true
     end
+
+    byW[pixels] = name
     return name
 end
 
@@ -68,6 +115,10 @@ function UI.Window(panel, width, height, priority)
 end
 
 hook.Add('OnScreenSizeChanged', 'HNS_UI_Viewport', function()
+    scale = math.min(ScrW() / 1920, ScrH() / 1080)
+    fontCache = {}
+    alternateFontCaches = {}
+
     for panel, size in pairs(windows) do
         if IsValid(panel) then
             panel:SetSize(UI.Bounds(size[1], size[2])); panel:Center(); panel:InvalidateLayout(true)
