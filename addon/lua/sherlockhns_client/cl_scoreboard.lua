@@ -308,6 +308,7 @@ local function Open()
     scroll:Dock(FILL)
 
     local nextSig = 0
+    local lastSig
     function scroll:Think()
         if CurTime() < nextSig then return end
         nextSig = CurTime() + 0.25
