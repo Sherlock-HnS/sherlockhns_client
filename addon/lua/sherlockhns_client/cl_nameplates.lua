@@ -104,7 +104,7 @@ hook.Add("HUDPaint", "SherlockHNS_Nameplate", function()
             nextScan = now + 0.1
             cachedTarget = FindTarget(lp)
         end
-        target = cachedTarget
+        target = IsValid(cachedTarget) and cachedTarget or nil
     else
         nextScan = 0
         cachedTarget = nil
