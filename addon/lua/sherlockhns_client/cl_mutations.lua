@@ -46,6 +46,10 @@ local BANNER_TIME = 5
 local infectFlash = -10
 local lastTeam
 
+local activeCache, nextActiveUpdate = {}, 0
+local alive_count, nextAliveCountUpdate = 0, 0
+local chipNames, isActive = {}, {}
+
 -- Retorna true se desenhou (para empilhar os banners sem buracos)
 local function DrawBanner(def, now, slot)
     local t = now - banners[def.id]
@@ -108,13 +112,16 @@ local function DrawRotation(now)
     surface.DrawRect(x - bw / 2, y + U(30), bw * math.Clamp(left / total, 0, 1), bh)
 end
 
-local function DrawInfection()
-    local n = 0
-    for _, p in ipairs(team.GetPlayers(TEAM_HIDERS)) do
-        if p:Alive() then n = n + 1 end
+local function DrawInfection(now)
+    if now >= nextAliveCountUpdate then
+        nextAliveCountUpdate = now + 0.25
+        alive_count = 0
+        for _, p in ipairs(team.GetPlayers(TEAM_HIDERS)) do
+            if p:Alive() then alive_count = alive_count + 1 end
+        end
     end
 
-    draw.SimpleTextOutlined("Runners restantes: " .. n, F(22), ScrW() / 2, SherlockHNS.UI.HUDY("status") + U(38),
+    draw.SimpleTextOutlined("Runners restantes: " .. alive_count, F(22), ScrW() / 2, SherlockHNS.UI.HUDY("status") + U(38),
         Color(120, 255, 140), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP, 1, color_black)
 end
 
@@ -129,7 +136,11 @@ local function DrawChip(def, index, now)
     local dot = U(8)
     local tagFont, nameFont = F(12), F(18)
 
-    local name = SherlockHNS.UI.Fit(def.name, nameFont, U(220))
+    local name = chipNames[def]
+    if not name then
+        name = SherlockHNS.UI.Fit(def.name, nameFont, U(220))
+        chipNames[def] = name
+    end
 
     surface.SetFont(tagFont)
     local tagW = surface.GetTextSize("MUTAÇÃO")
@@ -169,10 +180,15 @@ end
 hook.Add("HUDPaint", "SherlockHNS_Mutation_HUD", function()
     local now = CurTime()
     local lp = LocalPlayer()
-    local active = M.GetActive()
+    if now >= nextActiveUpdate then
+        activeCache = M.GetActive()
+        nextActiveUpdate = now + 0.1
+    end
+    local active = activeCache
 
     -- detecta mutações novas (anúncio + som), mesmo com o menu aberto
-    local isActive, fresh = {}, false
+    for id in pairs(isActive) do isActive[id] = nil end
+    local fresh = false
     for _, id in ipairs(active) do
         isActive[id] = true
         if not banners[id] then
@@ -217,5 +233,5 @@ hook.Add("HUDPaint", "SherlockHNS_Mutation_HUD", function()
 
     if isActive.bhop then DrawBhop(lp) end
     if isActive.rotation then DrawRotation(now) end
-    if isActive.infection then DrawInfection() end
+    if isActive.infection then DrawInfection(now) end
 end)
