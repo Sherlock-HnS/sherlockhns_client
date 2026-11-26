@@ -37,8 +37,8 @@ hook.Add("PostDrawTranslucentRenderables", "SherlockHNS_ForceFieldDraw", functio
             local pulse = 0.8 + 0.2 * math.sin(now * 4)
             local col = Color(COL.r, COL.g, COL.b, 45 * blink * pulse)
 
-            render.DrawSphere(center, radius, 24, 24, col)
-            render.DrawSphere(center, -radius, 24, 24, col) -- face de dentro
+            render.DrawSphere(center, radius, 12, 12, col)
+            render.DrawSphere(center, -radius, 12, 12, col) -- face de dentro
         end
     end
 end)
