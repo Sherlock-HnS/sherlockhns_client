@@ -52,6 +52,19 @@ function P.Status(p)
     return "Morto", COL_DEAD
 end
 
+-- Cache compartilhado pelo HUD e pela aura; a lista é atualizada a cada 0.5s.
+local cachedMembers, cachedPartyId, nextMembersUpdate = {}, -1, 0
+
+local function GetCachedMembers(id)
+    local now = CurTime()
+    if cachedPartyId ~= id or now >= nextMembersUpdate then
+        cachedPartyId = id
+        nextMembersUpdate = now + 0.5
+        cachedMembers = P.GetMembers(id)
+    end
+    return cachedMembers
+end
+
 -- Parties públicas: { { id, name, count } }
 function P.PublicParties()
     local counts, out = {}, {}
@@ -169,7 +182,7 @@ hook.Add("HUDPaint", "SherlockHNS_PartyHUD", function()
     if id == 0 then return end
 
     local others = {}
-    for _, m in ipairs(P.GetMembers(id)) do
+    for _, m in ipairs(GetCachedMembers(id)) do
         if m ~= lp then others[#others + 1] = m end
     end
     if #others == 0 then return end
@@ -219,7 +232,7 @@ hook.Add("PreDrawHalos", "SherlockHNS_PartyAura", function()
     if SH.AuraActive and SH.AuraActive() then return end
 
     local list = {}
-    for _, m in ipairs(P.GetMembers(P.GetId(lp))) do
+    for _, m in ipairs(GetCachedMembers(P.GetId(lp))) do
         if m ~= lp and m:Alive() and m:Team() == TEAM_HIDERS and SH.BodyEnts then
             SH.BodyEnts(m, list)
         end
