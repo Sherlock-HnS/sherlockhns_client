@@ -31,24 +31,40 @@ local panel
 local PANEL_W, PANEL_H = 300, 80
 local THUMB = 56
 
-local function SetThumb(holder, url)
-    holder.HasThumb = false
-    for _, c in ipairs(holder:GetChildren()) do
-        if IsValid(c) then c:Remove() end
+local function DrawURLImage(image, x, y, w, h)
+    if not image then return false end
+    local imageW, imageH = image()
+    if not imageW or not imageH then return false end
+
+    local sourceAspect, targetAspect = imageW / imageH, w / h
+    local u0, v0, u1, v1 = 0, 0, 1, 1
+    if sourceAspect > targetAspect then
+        local crop = targetAspect / sourceAspect
+        u0, u1 = (1 - crop) / 2, (1 + crop) / 2
+    elseif sourceAspect < targetAspect then
+        local crop = sourceAspect / targetAspect
+        v0, v1 = (1 - crop) / 2, (1 + crop) / 2
     end
 
+    surface.SetDrawColor(255, 255, 255, 255)
+    surface.DrawTexturedRectUV(x, y, w, h, u0, v0, u1, v1)
+    return true
+end
+
+local function SetThumb(holder, url)
+    holder.HasThumb = false
+    holder.URLImage = nil
+
+    for _, child in ipairs(holder:GetChildren()) do
+        if IsValid(child) then child:Remove() end
+    end
     if not isstring(url) or url == "" then return end
 
     if string.StartWith(url, "http://") or string.StartWith(url, "https://") then
-        local html = SherlockHNS.UI.Create("DHTML", holder)
-        html:Dock(FILL)
-        html:SetHTML(([[
-            <html><body style="margin:0;background:#1e1e1e;overflow:hidden;">
-                <img src="%s" style="width:100%%;height:100%%;object-fit:cover;" />
-            </body></html>
-        ]]):format((url:gsub('"', "&quot;"))))
-        html:SetMouseInputEnabled(false)
-        holder.HasThumb = true
+        -- URLImage retorna uma thunk: crie uma vez e consulte no Paint.
+        if isfunction(surface.URLImage) then
+            holder.URLImage = surface.URLImage(url, "smooth")
+        end
     else
         -- material local (relativo a materials/)
         local mat = Material(url)
@@ -61,7 +77,6 @@ local function SetThumb(holder, url)
         end
     end
 end
-
 local function BuildPanel()
     if IsValid(panel) then panel:Remove() end
 
@@ -93,6 +108,11 @@ local function BuildPanel()
     holder:SetMouseInputEnabled(false)
     function holder:Paint(w, h)
         draw.RoundedBox(6, 0, 0, w, h, Color(30, 30, 30, 255))
+
+        if DrawURLImage(self.URLImage, 0, 0, w, h) then
+            self.HasThumb = true
+        end
+
         if not self.HasThumb then
             draw.SimpleText("♪", "SherlockHNS_LMS_Title", w / 2, h / 2, Color(255, 195, 90, 220),
                 TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
