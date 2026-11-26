@@ -10,6 +10,16 @@ local SH = SherlockHNS
 local cvEntity = CreateClientConVar("hns_aura_mode_entity", "0", true, false,
     "Aura por entidade (1, mais leve) ou halo (0, padrão).", 0, 1)
 
+-- O servidor só precisa criar/transmitir hns_aura quando algum cliente usa este modo.
+local function SyncEntityMode()
+    net.Start("sherlockhns_aura_entity_mode")
+    net.WriteBool(cvEntity:GetBool())
+    net.SendToServer()
+end
+
+cvars.AddChangeCallback("hns_aura_mode_entity", SyncEntityMode, "SherlockHNS_AuraEntityMode")
+timer.Simple(0, SyncEntityMode) -- envia também a preferência salva ao entrar no servidor
+
 local COL_KILLER = Color(255, 60, 60)
 local COL_RUNNER = Color(80, 190, 255)
 
