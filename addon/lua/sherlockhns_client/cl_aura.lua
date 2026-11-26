@@ -1,9 +1,9 @@
 -- Aura: outline visível através de paredes em killers e runners.
 -- Liga quando faltam SherlockHNS.AuraTime segundos na rodada ou no LMS.
 --
--- Dois modos (ConVar do jogador hns_aura_entity):
---   1 = entidade (padrão): caixa desenhada nas hns_aura (sv_aura.lua). Leve, vale de qualquer lugar.
---   0 = halo: o outline original. Mais bonito, mais pesado.
+-- Dois modos (ConVar do jogador hns_aura_mode_entity):
+--   0 = halo (padrão): outline original. Mais agradável visualmente, porém mais pesado.
+--   1 = entidade: caixa desenhada nas hns_aura (sv_aura.lua). Mais leve, visual mais simples.
 
 local SH = SherlockHNS
 
@@ -114,29 +114,18 @@ hook.Add("PostDrawTranslucentRenderables", "SherlockHNS_AuraEntity", function(de
     cam.IgnoreZ(true)
     render.SetColorMaterialIgnoreZ()
 
+    -- O resultado é igual ao contorno anterior, sem Color/Vector por jogador
+    -- nem as 12 chamadas individuais de DrawLine.
+    local killerAuraOn = KillerAuraOn()
+
     for _, e in ipairs(list) do
         local owner = e:GetTarget()
-        if IsValid(owner) and owner ~= lp and owner:Alive()
-            and (owner:Team() ~= TEAM_KILLERS or KillerAuraOn()) then
-            local base = owner:Team() == TEAM_KILLERS and COL_KILLER or COL_RUNNER
-            local pos, mins, maxs = e:GetPos(), e:GetBMins(), e:GetBMaxs()
-
-            -- Desenha apenas o contorno: preencher o AABB transforma a aura
-            -- em um bloco sólido, especialmente evidente nos killers em vermelho.
-            -- arestas
-            local wmin, wmax = pos + mins, pos + maxs
-            local c = Color(base.r, base.g, base.b, 255)
-            local x1, y1, z1, x2, y2, z2 = wmin.x, wmin.y, wmin.z, wmax.x, wmax.y, wmax.z
-
-            local a, b, cc, d = Vector(x1, y1, z1), Vector(x2, y1, z1), Vector(x2, y2, z1), Vector(x1, y2, z1)
-            local e1, f, g, h = Vector(x1, y1, z2), Vector(x2, y1, z2), Vector(x2, y2, z2), Vector(x1, y2, z2)
-
-            render.DrawLine(a, b, c, false); render.DrawLine(b, cc, c, false)
-            render.DrawLine(cc, d, c, false); render.DrawLine(d, a, c, false)
-            render.DrawLine(e1, f, c, false); render.DrawLine(f, g, c, false)
-            render.DrawLine(g, h, c, false); render.DrawLine(h, e1, c, false)
-            render.DrawLine(a, e1, c, false); render.DrawLine(b, f, c, false)
-            render.DrawLine(cc, g, c, false); render.DrawLine(d, h, c, false)
+        if IsValid(owner) and owner ~= lp and owner:Alive() then
+            local team = owner:Team()
+            if team ~= TEAM_KILLERS or killerAuraOn then
+                local col = team == TEAM_KILLERS and COL_KILLER or COL_RUNNER
+                render.DrawWireframeBox(e:GetPos(), angle_zero, e:GetBMins(), e:GetBMaxs(), col, false)
+            end
         end
     end
 
