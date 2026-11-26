@@ -79,6 +79,7 @@ end
 
 -- ===== Desenho =====
 local alpha, last = 0, nil
+local nextScan, cachedTarget = 0, nil
 
 -- Jogador sob a mira agora (usado pelo atalho de ficha dos admins; ver cl_admin_moderation.lua)
 function NP.GetAimed()
@@ -96,7 +97,18 @@ hook.Add("HUDPaint", "SherlockHNS_Nameplate", function()
     if show and hook.Run("SherlockHNS_ShouldDrawHUD") == false then show = false end
     if show and SH.HUD and SH.HUD.Hidden then show = false end
 
-    local target = show and FindTarget(lp) or nil
+    local now = CurTime()
+    local target
+    if show then
+        if now >= nextScan then
+            nextScan = now + 0.1
+            cachedTarget = FindTarget(lp)
+        end
+        target = cachedTarget
+    else
+        nextScan = 0
+        cachedTarget = nil
+    end
     NP.Current = target
     if target then last = target end
 
