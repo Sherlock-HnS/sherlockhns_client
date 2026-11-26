@@ -381,15 +381,13 @@ end
 
 -- ===== Menu =====
 local bgMat, logoMat
+local SHADE_MATERIAL = Material("vgui/gradient-r")
 
 local function DrawShade(h)
     local width = U(820)
-    local block = 4 -- colunas inteiras e sem sobreposição (sobrepor gera listras)
-    for x = 0, width - 1, block do
-        local k = (x + block / 2) / width
-        surface.SetDrawColor(5, 5, 10, SHADE_ALPHA * (1 - k) ^ 1.5)
-        surface.DrawRect(x, 0, block, h)
-    end
+    surface.SetDrawColor(5, 5, 10, SHADE_ALPHA)
+    surface.SetMaterial(SHADE_MATERIAL)
+    surface.DrawTexturedRect(0, 0, width, h)
 end
 
 local function DrawBackground(w, h)
