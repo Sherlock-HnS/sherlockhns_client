@@ -85,7 +85,7 @@ local function CanListen()
 end
 
 hook.Add("Think", "SherlockHNS_Keys", function()
-    local listen = CanListen()
+    local listen
 
     for _, def in ipairs(K.List) do
         local key = K.Get(def.id)
@@ -94,7 +94,10 @@ hook.Add("Think", "SherlockHNS_Keys", function()
         down[def.id] = d
 
         local fn = handlers[def.id]
-        if pressed and listen and fn then fn() end
+        if pressed and fn then
+            if listen == nil then listen = CanListen() end
+            if listen then fn() end
+        end
     end
 end)
 
