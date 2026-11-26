@@ -94,7 +94,7 @@ hook.Add("PreDrawHalos", "SherlockHNS_Aura", function()
     local lp = LocalPlayer()
     local killers, runners = {}, {}
 
-    for _, ply in ipairs(player.GetAll()) do
+    for _, ply in player.Iterator() do
         if ply ~= lp and ply:Alive() then
             local t = ply:Team()
             if t == TEAM_KILLERS then
