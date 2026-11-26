@@ -381,7 +381,7 @@ end
 
 -- ===== Menu =====
 local bgMat, logoMat
-local SHADE_MATERIAL = Material("vgui/gradient-r")
+local SHADE_MATERIAL = Material("vgui/gradient-l")
 
 local function DrawShade(h)
     local width = U(820)
