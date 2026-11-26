@@ -54,6 +54,7 @@ end
 
 -- Cache compartilhado pelo HUD e pela aura; a lista é atualizada a cada 0.5s.
 local cachedMembers, cachedPartyId, nextMembersUpdate = {}, -1, 0
+local hudOthers = {}
 
 local function GetCachedMembers(id)
     local now = CurTime()
@@ -181,9 +182,10 @@ hook.Add("HUDPaint", "SherlockHNS_PartyHUD", function()
     local id = P.GetId(lp)
     if id == 0 then return end
 
-    local others = {}
+    local others = hudOthers
+    for i = #others, 1, -1 do others[i] = nil end
     for _, m in ipairs(GetCachedMembers(id)) do
-        if m ~= lp then others[#others + 1] = m end
+        if IsValid(m) and m ~= lp then others[#others + 1] = m end
     end
     if #others == 0 then return end
 
@@ -232,8 +234,11 @@ hook.Add("PreDrawHalos", "SherlockHNS_PartyAura", function()
     if SH.AuraActive and SH.AuraActive() then return end
 
     local list = {}
-    for _, m in ipairs(GetCachedMembers(P.GetId(lp))) do
-        if m ~= lp and m:Alive() and m:Team() == TEAM_HIDERS and SH.BodyEnts then
+    local partyId = P.GetId(lp)
+    if partyId == 0 then return end
+
+    for _, m in ipairs(GetCachedMembers(partyId)) do
+        if IsValid(m) and m ~= lp and m:Alive() and m:Team() == TEAM_HIDERS and SH.BodyEnts then
             SH.BodyEnts(m, list)
         end
     end
