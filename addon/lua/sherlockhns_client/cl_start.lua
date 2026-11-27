@@ -38,6 +38,8 @@ include("cl_forcefield.lua")
 include("cl_cooldown.lua")
 include("cl_cooldown.lua")
 include("cl_effects.lua")
+include("cl_content.lua")
+include("cl_admin_content.lua")
 
 -- hide health bar
 local hide = {

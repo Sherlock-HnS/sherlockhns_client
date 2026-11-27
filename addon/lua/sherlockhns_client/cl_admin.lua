@@ -625,6 +625,8 @@ local function OpenPanel()
     Add("Enquete", SherlockHNS.BuildPollTab(sheet), "icon16/chart_bar.png")
     Add("Anúncio", SherlockHNS.BuildAnnounceTab(sheet), "icon16/bell.png")
     Add("AFK", SherlockHNS.BuildAfkTab(sheet), "icon16/user_delete.png")
+    Add("Conteúdo", SherlockHNS.BuildContentTab(sheet), "icon16/book_edit.png")
+
     for _, def in ipairs(SherlockHNS.Creation.Tabs) do
         Add(def.name, SherlockHNS.BuildCreationTab(sheet, def), def.icon)
     end
