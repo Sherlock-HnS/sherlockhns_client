@@ -36,6 +36,8 @@ include("cl_afk.lua")
 include("cl_admin_afk.lua")
 include("cl_forcefield.lua")
 include("cl_cooldown.lua")
+include("cl_cooldown.lua")
+include("cl_effects.lua")
 
 -- hide health bar
 local hide = {
